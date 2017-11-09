@@ -18,9 +18,8 @@ def get_courses_list(courses_quantity):
     return random.sample(courses_list, courses_quantity)
 
 
-def get_course_info(course_url, verbose):
-    response = requests.get(course_url)
-    soup = bs4.BeautifulSoup(response.text, 'html.parser')
+def get_course_info(course_html, verbose):
+    soup = bs4.BeautifulSoup(course_html, 'html.parser')
     course_parse_data = {
         'Name': ('h1',),
         'Language': ('div', {'class': 'rc-Language'}),
@@ -44,7 +43,7 @@ def get_course_info(course_url, verbose):
     return course_text_info
 
 
-def output_courses_info_to_xlsx(courses_info_list, filepath):
+def output_courses_info_to_xlsx(courses_info_list):
     columns_names = ('Name', 'Language',
                      'Starting date', 'Duration',
                      'Rating',
@@ -56,7 +55,7 @@ def output_courses_info_to_xlsx(courses_info_list, filepath):
         course_data = [
             course_info[column] for column in columns_names]
         work_sheet.append(course_data)
-    work_book.save(filepath)
+    return work_book
 
 
 def get_args():
@@ -75,9 +74,14 @@ if __name__ == '__main__':
     for course_url in courses_url_list:
         if args.verbose:
             print('Handling {} ...'.format(course_url))
-        courses_info_list.append(get_course_info(course_url, args.verbose))
+        response = requests.get(course_url)
+        courses_info_list.append(get_course_info(response.text,
+                                                 args.verbose,
+                                                 )
+                                 )
         if args.verbose:
             print('Ok')
-    output_courses_info_to_xlsx(courses_info_list, args.filepath)
+    work_book_xlsx = output_courses_info_to_xlsx(courses_info_list)
+    work_book_xlsx.save(args.filepath)
     if args.verbose:
         print('Job is done. Result is stored in {}'.format(args.filepath))
